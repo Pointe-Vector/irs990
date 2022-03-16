@@ -1,4 +1,3 @@
-from configparser import ConfigParser
 from enum import Enum
 from pathlib import Path
 from typing_extensions import TypedDict, NotRequired
@@ -61,7 +60,7 @@ def _validate_rank(config: Dict) -> RankConfig:
             raise TypeError('override must be a file')
 
 class CompensationConfig(TypedDict):
-    parser_configuration: ConfigParser
+    parser_configuration: ParserConfig
 
 def _validate_compensation(config: Dict) -> CompensationConfig:
     _check_for_unknown_keys(CompensationConfig, config)

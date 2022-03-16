@@ -3,7 +3,7 @@ import pandas as pd
 from pathlib import Path
 import zipfile
 
-from pointevector.irs990 import Config
+from pointevector.irs990._validate_config import Config
 from pointevector.xml_parser import ParserConfig, parse
 
 def _gen_filings(directory: Path):
