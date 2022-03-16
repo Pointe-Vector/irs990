@@ -2,7 +2,6 @@ import logging
 import pandas as pd
 import zipfile
 
-from pointevector.irs990.build_index import build as build_index
 from pointevector.irs990.validate_config import Config
 
 def build(config: Config):
@@ -23,4 +22,3 @@ def build(config: Config):
                     z.writestr(zinfo_or_arcname=filing.filename, data=data)
                 except zipfile.BadZipFile as e:
                     logging.warning(f"{e}: {filing.organization_name} {filing.style} {filing.archive} {filing.filename}")
-    build_index(config['cache']['cache_directory'], config['cache']['parser_configuration'])

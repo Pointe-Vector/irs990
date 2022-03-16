@@ -1,10 +1,10 @@
 import io
 import pandas as pd
 from pathlib import Path
-from ruamel.yaml import YAML
 import zipfile
 
-from pointevector.xml_parser import parse
+from pointevector.irs990 import Config
+from pointevector.xml_parser import ParserConfig, parse
 
 def _gen_filings(directory: Path):
     for archive in directory.glob('*.zip'):
@@ -12,16 +12,14 @@ def _gen_filings(directory: Path):
             for filename in z.filelist:
                 yield (archive, filename, z.open(filename).read())
 
-def _worker(item, indexer: Path):
+def _worker(item, indexer: ParserConfig):
     archive, file_info, content = item
-    results = parse(
-        config=YAML(typ='safe').load(indexer.read_text()),
-        data=io.BytesIO(content),
-    )
+    results = parse(config=indexer, data=io.BytesIO(content))
     results['archive'] = archive
     results['filename'] = file_info.filename
     return results
 
-def build(directory: Path, indexer: Path) -> pd.DataFrame:
-    df = pd.DataFrame.from_records(_worker(item, indexer) for item in _gen_filings(directory))
+def build(config: Config, cache: bool=True) -> pd.DataFrame:
+    directory = config['cache']['cache_directory'] if cache else config['cache']['archive_directory']
+    df = pd.DataFrame.from_records(_worker(item, config['cache']['parser_configuration']) for item in _gen_filings(directory))
     df.to_csv(directory.joinpath('index.csv'), index=False)
