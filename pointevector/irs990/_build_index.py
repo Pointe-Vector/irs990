@@ -10,7 +10,7 @@ def _gen_filings(directory: Path):
     for archive in directory.glob('*.zip'):
         with zipfile.ZipFile(archive) as z:
             for filename in z.filelist:
-                yield (archive, filename, z.open(filename).read())
+                yield (archive.name, filename, z.open(filename).read())
 
 def _worker(item, indexer: ParserConfig):
     archive, file_info, content = item
