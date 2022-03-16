@@ -2,7 +2,7 @@ import logging
 import pandas as pd
 import zipfile
 
-from pointevector.irs990.validate_config import Config
+from pointevector.irs990._validate_config import Config
 
 def build(config: Config):
     dim = config['partition_dimension']
