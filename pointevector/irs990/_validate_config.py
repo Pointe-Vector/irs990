@@ -1,7 +1,6 @@
-from enum import Enum
 from pathlib import Path
 from typing_extensions import TypedDict, NotRequired
-from typing import Dict, Tuple
+from typing import Any, Dict, List
 from ruamel.yaml import YAML
 
 from pointevector.xml_parser import ParserConfig, validate as validate_parser_config
@@ -21,14 +20,16 @@ def _check_if_paths_exist(cls, config: Dict):
 def _validate_parser(path: str) -> ParserConfig:
     config_path = Path(path)
     if not config_path.exists():
-        raise OSError('Could not find path to parser_configuration')
+        raise OSError('Could not find path to parser')
 
     return validate_parser_config(YAML(typ='safe').load(config_path.read_text()))
 
 class CacheConfig(TypedDict):
     archive_directory: Path
-    parser_configuration: ParserConfig
     cache_directory: Path
+    company_map: Path
+    parser: ParserConfig
+    partition_dimension: NotRequired[str]
 
 def _validate_cache(config: Dict) -> CacheConfig:
     _check_for_unknown_keys(CacheConfig, config)
@@ -37,57 +38,32 @@ def _validate_cache(config: Dict) -> CacheConfig:
         raise TypeError('archive_directory must be a directory')
     if not config['cache_directory'].is_dir():
         raise TypeError('cache_directory must be a directory')
-    config['parser_configuration'] = _validate_parser(config['parser_configuration'])
+    config['parser'] = _validate_parser(config['parser'])
+    if 'partition_dimension' in config:
+        config['partition_dimension'] = str(config['partition_dimension'])
 
-class RankMetric(Enum):
-    unknown=0
-    total_expenses=1
+class Plugin(TypedDict):
+    plugin: str
+    script: Path
+    inputs: NotRequired[Dict[str, Any]]
 
-class RankConfig(TypedDict):
-    metrics: Tuple[RankMetric]
-    parser_configuration: ParserConfig
-    override: NotRequired[Path]
-
-def _validate_rank(config: Dict) -> RankConfig:
-    _check_for_unknown_keys(RankConfig, config)
-    config['metrics'] = tuple(RankMetric[metric] for metric in config['metrics'])
-    config['parser_configuration'] = _validate_parser(config['parser_configuration'])
-    if 'override' in config:
-        config['override'] = Path(config['override'])
-        if not config['override'].exists():
-            raise OSError('Could not find path to "override"')
-        if not config['override'].is_file():
-            raise TypeError('override must be a file')
-
-class CompensationConfig(TypedDict):
-    parser_configuration: ParserConfig
-
-def _validate_compensation(config: Dict) -> CompensationConfig:
-    _check_for_unknown_keys(CompensationConfig, config)
-    config['parser_configuration'] = _validate_parser(config['parser_configuration'])
-
+def _validate_plugin(config: Dict) -> Plugin:
+    _check_if_paths_exist(Plugin, config)
+    config['plugin'] = str(config['plugin'])
+    return config
 class Config(TypedDict):
     output: Path
-    company_map: Path
-    partition_dimension: NotRequired[str]
     earliest_year: int
     latest_year: NotRequired[int]
     cache: CacheConfig
-    rank: NotRequired[RankConfig]
-    compensation: NotRequired[CompensationConfig]
+    plugins: List[Plugin]
     
 def validate(config: Dict) -> Config:
     _check_for_unknown_keys(Config, config)
     config['output'] = Path(config['output'])
-    config['company_map'] = Path(config['company_map'])
-    if 'partition_dimension' in config:
-        config['partition_dimension'] = str(config['partition_dimension'])
     config['earliest_year'] = int(config['earliest_year'])
     if 'latest_year' in config:
         config['latest_year'] = int(config['latest_year'])
     _validate_cache(config['cache'])
-    if 'rank' in config:
-        _validate_rank(config['rank'])
-    if 'compensation' in config:
-        _validate_compensation(config['compensation'])
+    config['plugins'] = [_validate_plugin(plugin) for plugin in config['plugins']]
     return config
