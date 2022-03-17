@@ -28,8 +28,6 @@ def _get_fields(parser: ParserConfig):
 
 def build(config: CacheConfig, cache: bool=True):
     directory = config['cache_directory'] if cache else config['archive_directory']
-    print([i for i in _get_fields(config['parser'])])
-    print(next(_worker(item, config['parser']).keys() for item in _gen_filings(directory)))
     with open(directory.joinpath('index.csv'), 'w') as f:
         index = csv.DictWriter(f, fieldnames=[f for f in _get_fields(config['parser'])], extrasaction='ignore')
         index.writeheader()
