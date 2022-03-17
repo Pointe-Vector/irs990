@@ -4,7 +4,9 @@ import importlib
 from pathlib import Path
 from ruamel.yaml import YAML
 
-from pointevector.irs990 import validate, build_cache, build_index
+from pointevector.irs990.index import build as build_index
+from pointevector.irs990.cache import build as build_cache
+from pointevector.irs990.config import validate
 
 def main():
     # Create argument parser
@@ -16,13 +18,14 @@ def main():
     config = validate(YAML(typ='safe').load(Path(args.config).read_text()))
 
     # Ensure cache index exists
-    if not config['cache']['cache_directory'].joinpath('index.csv').exists():
-        if not config['cache']['archive_directory'].joinpath('index.csv').exists():
-            build_index(config, cache=False)
-            logging.info('Could not find archive index, so building it...')
-        logging.info('Could not find cache index, so building it...')
-        build_cache(config)
-        build_index(config)
+    cache_config = config['cache']
+    if not cache_config['cache_directory'].joinpath('index.csv').exists():
+        if not cache_config['archive_directory'].joinpath('index.csv').exists():
+            logging.warning('Could not find archive index, so building it...')
+            build_index(cache_config, cache=False)
+        logging.warning('Could not find cache index, so building it...')
+        build_cache(cache_config)
+        build_index(cache_config)
 
     # Run plugins
     for plugin in config['plugins']:
